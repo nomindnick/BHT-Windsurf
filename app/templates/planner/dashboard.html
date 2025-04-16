@@ -58,6 +58,126 @@
     </div>
 
     <div class="mb-4">
+        <h4>{{ this_month }} {{ first_day.year }} Calendar View</h4>
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('planner.dashboard', month=(first_day.month-1 if first_day.month > 1 else 12), year=(first_day.year if first_day.month > 1 else first_day.year-1)) }}">&laquo; Previous</a>
+            <span style="font-size:1.2em;"><strong>{{ this_month }} {{ first_day.year }}</strong></span>
+            <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('planner.dashboard', month=(first_day.month+1 if first_day.month < 12 else 1), year=(first_day.year if first_day.month < 12 else first_day.year+1)) }}">Next &raquo;</a>
+        </div>
+        <style>
+            .calendar-table td { height: 90px; vertical-align: top; cursor: pointer; }
+            .calendar-nonwork { background: #f0f0f0; color: #aaa; cursor: default !important; }
+            .calendar-on-track { background: #d1e7dd; }
+            .calendar-partial { background: #fff3cd; }
+            .calendar-no-log { background: #f8d7da; }
+            .calendar-today { background: #cfe2ff; border: 2px solid #0d6efd; }
+        </style>
+        <div class="table-responsive">
+            <table class="table table-bordered calendar-table">
+                <thead>
+                    <tr>
+                        <th>Sun</th><th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th><th>Sat</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% set week = [] %}
+                    {% set start_weekday = first_day.weekday() %}
+                    {% set start_weekday = (start_weekday + 1) % 7 %}
+                    {% for empty in range(start_weekday) %}
+                        {% set _ = week.append(None) %}
+                    {% endfor %}
+                    {% for day in calendar_days %}
+                        {% set week = week + [day] %}
+                        {% if week|length == 7 %}
+                            <tr>
+                                {% for d in week %}
+                                    {% if d is none %}
+                                        <td></td>
+                                    {% else %}
+                                        <td class="calendar-{{ d.status }}" {% if d.status != 'nonwork' %}data-date="{{ d.date }}" onclick="showLogModal({{ d.date|tojson }}, {{ d.target|tojson }}, {{ d.logged|tojson }})"{% endif %}>
+                                            <div><strong>{{ d.date.day }}</strong></div>
+                                            {% if d.target is not none %}
+                                                <div>Target: {{ d.target }}</div>
+                                            {% endif %}
+                                            {% if d.logged is not none %}
+                                                <div>Logged: {{ d.logged }}</div>
+                                            {% endif %}
+                                        </td>
+                                    {% endif %}
+                                {% endfor %}
+                            </tr>
+                            {% set week = [] %}
+                        {% endif %}
+                    {% endfor %}
+                    {% if week|length > 0 %}
+                        <tr>
+                            {% for d in week %}
+                                {% if d is none %}
+                                    <td></td>
+                                {% else %}
+                                    <td class="calendar-{{ d.status }}" {% if d.status != 'nonwork' %}data-date="{{ d.date }}" onclick="showLogModal({{ d.date|tojson }}, {{ d.target|tojson }}, {{ d.logged|tojson }})"{% endif %}>
+                                        <div><strong>{{ d.date.day }}</strong></div>
+                                        {% if d.target is not none %}
+                                            <div>Target: {{ d.target }}</div>
+                                        {% endif %}
+                                        {% if d.logged is not none %}
+                                            <div>Logged: {{ d.logged }}</div>
+                                        {% endif %}
+                                    </td>
+                                {% endif %}
+                            {% endfor %}
+                            {% for _ in range(7 - week|length) %}<td></td>{% endfor %}
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+        <div class="mb-2">
+            <span class="badge calendar-on-track">On Track</span>
+            <span class="badge calendar-partial">Partial</span>
+            <span class="badge calendar-no-log">No Log</span>
+            <span class="badge calendar-nonwork">Non-Work Day</span>
+            <span class="badge calendar-today">Today</span>
+        </div>
+
+        <!-- Log Modal -->
+        <div class="modal fade" id="logModal" tabindex="-1" aria-labelledby="logModalLabel" aria-hidden="true">
+          <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+              <form method="POST">
+                <div class="modal-header">
+                  <h5 class="modal-title" id="logModalLabel">Log Hours for <span id="log-date-label"></span></h5>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                  <input type="hidden" name="log_date" id="log-date-input">
+                  <input type="hidden" name="redirect_month" value="{{ first_day.month }}">
+                  <input type="hidden" name="redirect_year" value="{{ first_day.year }}">
+                  <div class="mb-3">
+                    <label for="log-hours-input" class="form-label">Hours</label>
+                    <input type="number" step="0.1" min="0" max="24" name="log_hours" id="log-hours-input" class="form-control" required>
+                  </div>
+                </div>
+                <div class="modal-footer">
+                  <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                  <button type="submit" class="btn btn-primary">Save</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+        <script>
+            function showLogModal(date, target, logged) {
+                document.getElementById('log-date-label').innerText = date;
+                document.getElementById('log-date-input').value = date;
+                document.getElementById('log-hours-input').value = logged || target || '';
+                var modal = new bootstrap.Modal(document.getElementById('logModal'));
+                modal.show();
+            }
+        </script>
+    </div>
+
+    <div class="mb-4">
         <h4>Progress & Pace</h4>
         <div class="row">
             <div class="col-md-6">

@@ -79,7 +79,14 @@ def generate_plan(goal, holidays, vacation_days, workload_weights):
 @login_required
 def dashboard():
     user = current_user
-    year = datetime.date.today().year
+    # Support month/year navigation
+    try:
+        month = int(request.args.get('month', datetime.date.today().month))
+        year = int(request.args.get('year', datetime.date.today().year))
+    except Exception:
+        month = datetime.date.today().month
+        year = datetime.date.today().year
+
     goal = BillableHourGoal.query.filter_by(user_id=user.id, year=year).first()
     holidays = Holiday.query.filter_by(user_id=user.id).all()
     vacation_days = VacationDay.query.filter_by(user_id=user.id).all()
@@ -88,13 +95,17 @@ def dashboard():
         return redirect(url_for('planner.setup_wizard'))
     plan, monthly_targets = generate_plan(goal, holidays, vacation_days, goal.workload_weights)
     today = datetime.date.today()
-    this_month = MONTHS[today.month - 1]
-    daily_plan = {d: h for d, h in plan.items() if d.month == today.month}
+    # Show daily plan for selected month
+    daily_plan = {d: h for d, h in plan.items() if d.month == month and d.year == year}
+    this_month = MONTHS[month - 1]
 
-    # Handle logging hours
+    # Handle logging hours (for any date)
     if request.method == 'POST':
         log_date = request.form.get('log_date')
         log_hours = request.form.get('log_hours')
+        # For modal, redirect back to the same month/year
+        redirect_month = request.form.get('redirect_month', month)
+        redirect_year = request.form.get('redirect_year', year)
         try:
             log_date_obj = datetime.datetime.strptime(log_date, '%Y-%m-%d').date()
             log_hours_float = float(log_hours)
@@ -109,7 +120,7 @@ def dashboard():
             flash(f'Logged {log_hours_float} hours for {log_date}', 'success')
         except Exception:
             flash('Invalid log entry.', 'danger')
-        return redirect(url_for('planner.dashboard'))
+        return redirect(url_for('planner.dashboard', month=redirect_month, year=redirect_year))
 
     # Progress tracking
     # Get all logs for this user/year
@@ -136,6 +147,35 @@ def dashboard():
     elif year_actual < year_target * (today.timetuple().tm_yday / 365):
         pace_status = f'{round(year_target * (today.timetuple().tm_yday / 365) - year_actual, 1)} hours behind'
 
+    # Calendar structure for current month
+    from calendar import monthrange
+    first_day = datetime.date(today.year, today.month, 1)
+    last_day = datetime.date(today.year, today.month, monthrange(today.year, today.month)[1])
+    calendar_days = []
+    for n in range((last_day - first_day).days + 1):
+        d = first_day + datetime.timedelta(days=n)
+        target = daily_plan.get(d)
+        logged = logs_by_date.get(d)
+        # Determine status
+        if target is None:
+            status = 'nonwork'  # Not a working day
+        elif d == today:
+            status = 'today'
+        elif logged is None:
+            status = 'no-log'
+        elif logged >= target:
+            status = 'on-track'
+        elif 0 < logged < target:
+            status = 'partial'
+        else:
+            status = 'no-log'
+        calendar_days.append({
+            'date': d,
+            'target': target,
+            'logged': logged,
+            'status': status
+        })
+    
     return render_template('planner/dashboard.html', 
         monthly_targets=monthly_targets, 
         daily_plan=daily_plan, 
@@ -147,7 +187,9 @@ def dashboard():
         year_target=year_target,
         pace_status=pace_status,
         catchup_per_day=catchup_per_day,
-        today=today
+        today=today,
+        calendar_days=calendar_days,
+        first_day=first_day
     )
 
 @planner_bp.route('/setup', methods=['GET', 'POST'])
