@@ -6,8 +6,8 @@ from flask import render_template
 import os
 
 # Initialize extensions
-login_manager = LoginManager()
 db = SQLAlchemy()
+login_manager = LoginManager()
 migrate = Migrate()
 
 def create_app():
@@ -28,11 +28,20 @@ def create_app():
     login_manager.init_app(app)
     migrate.init_app(app, db)
 
-    # Register blueprints (to be created later)
-    # from .auth import auth_bp
-    # app.register_blueprint(auth_bp)
-    # from .planner import planner_bp
-    # app.register_blueprint(planner_bp)
+    # Setup Flask-Login
+    from .models import User
+
+    @login_manager.user_loader
+    def load_user(user_id):
+        return User.query.get(int(user_id))
+
+    login_manager.login_view = 'auth.login'
+
+    # Register blueprints
+    from .auth import auth_bp
+    app.register_blueprint(auth_bp)
+    from .planner import planner_bp
+    app.register_blueprint(planner_bp)
 
     @app.route("/")
     def home():

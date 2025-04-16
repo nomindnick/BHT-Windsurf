@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-5">
+    <h2 class="mb-4">Initial Setup Wizard</h2>
+    <form method="POST">
+        <div class="mb-4">
+            <label for="annual_goal" class="form-label"><strong>Annual Billable Hour Goal</strong></label>
+            <input type="number" class="form-control" id="annual_goal" name="annual_goal" min="1" required value="{{ annual_goal or '' }}">
+        </div>
+        <div class="mb-4">
+            <label class="form-label"><strong>Firm Holidays</strong> <small class="text-muted">(Edit as needed)</small></label>
+            <div class="table-responsive">
+                <table class="table table-bordered align-middle">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Name</th>
+                            <th>Remove</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for h in holidays %}
+                        <tr>
+                            <td><input type="date" class="form-control" name="holiday_dates" value="{{ h.date }}" required></td>
+                            <td><input type="text" class="form-control" name="holiday_names" value="{{ h.name }}" required></td>
+                            <td><input type="checkbox" name="remove_holiday_{{ loop.index0 }}"></td>
+                        </tr>
+                        {% endfor %}
+                        <tr>
+                            <td><input type="date" class="form-control" name="new_holiday_date"></td>
+                            <td><input type="text" class="form-control" name="new_holiday_name"></td>
+                            <td></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="mb-4">
+            <label class="form-label"><strong>Personal/Vacation Days</strong></label>
+            <div class="table-responsive">
+                <table class="table table-bordered align-middle">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Remove</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for v in vacation_days %}
+                        <tr>
+                            <td><input type="date" class="form-control" name="vacation_dates" value="{{ v.date }}" required></td>
+                            <td><input type="checkbox" name="remove_vacation_{{ loop.index0 }}"></td>
+                        </tr>
+                        {% endfor %}
+                        <tr>
+                            <td><input type="date" class="form-control" name="new_vacation_date"></td>
+                            <td></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="mb-4">
+            <label class="form-label"><strong>Monthly Workload Variation</strong> <small class="text-muted">(1.0 = Normal, &gt;1 = Busy, &lt;1 = Slow)</small></label>
+            <div class="table-responsive">
+                <table class="table table-bordered align-middle">
+                    <thead>
+                        <tr>
+                            <th>Month</th>
+                            <th>Workload</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for month, weight in workload_weights.items() %}
+                        <tr>
+                            <td>{{ month }}</td>
+                            <td>
+                                <select class="form-select" name="workload_{{ month }}">
+                                    <option value="1.2" {% if weight == 1.2 %}selected{% endif %}>Busy (1.2)</option>
+                                    <option value="1.0" {% if weight == 1.0 %}selected{% endif %}>Normal (1.0)</option>
+                                    <option value="0.8" {% if weight == 0.8 %}selected{% endif %}>Slow (0.8)</option>
+                                </select>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="mb-4 text-end">
+            <button class="btn btn-success" type="submit">Save Setup</button>
+        </div>
+    </form>
+</div>
+{% endblock %}
