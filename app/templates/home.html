@@ -11,8 +11,8 @@
                 <div class="mt-4">
                     <h2>Quick Actions</h2>
                     <div class="d-grid gap-2 col-6 mx-auto mt-3">
-                        <a href="#" class="btn btn-primary">View Dashboard</a>
-                        <a href="#" class="btn btn-outline-primary">Log Hours</a>
+                        <a href="{{ url_for('planner.dashboard') }}" class="btn btn-primary">View Dashboard</a>
+                        <a href="{{ url_for('planner.dashboard') }}" class="btn btn-outline-primary">Log Hours</a>
                     </div>
                 </div>
             {% else %}

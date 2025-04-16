@@ -178,25 +178,275 @@
     </div>
 
     <div class="mb-4">
-        <h4>Progress & Pace</h4>
-        <div class="row">
-            <div class="col-md-6">
-                <div class="card card-body mb-2">
-                    <strong>This Month:</strong><br>
+        <h4>Productivity Insights</h4>
+        <div class="row mb-3">
+            <div class="col-md-4">
+                <div class="card card-body">
+                    <strong>Most Productive Day:</strong><br>
+                    {% if most_productive_day %}
+                        <span>{{ most_productive_day }}</span>
+                    {% else %}
+                        <span class="text-muted">N/A</span>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card card-body">
+                    <strong>Longest Streak:</strong><br>
+                    <span>{{ streak }} days</span>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card card-body">
+                    <strong>Current Month:</strong><br>
                     <span>Actual: {{ month_actual }} / Target: {{ month_target }}</span>
                 </div>
             </div>
-            <div class="col-md-6">
-                <div class="card card-body mb-2">
+        </div>
+        <div class="row mb-3">
+            <div class="col-md-4">
+                <div class="card card-body">
                     <strong>This Year:</strong><br>
                     <span>Actual: {{ year_actual }} / Target: {{ year_target }}</span>
                 </div>
             </div>
+            <div class="col-md-8">
+                <div class="alert alert-info mb-0">
+                    <strong>Pace:</strong> {{ pace_status }}<br>
+                    <strong>To catch up:</strong> Bill {{ catchup_per_day }} hours/day for the rest of the year.
+                </div>
+            </div>
         </div>
-        <div class="alert alert-info mt-3">
-            <strong>Pace:</strong> {{ pace_status }}<br>
-            <strong>To catch up:</strong> Bill {{ catchup_per_day }} hours/day for the rest of the year.
+    </div>
+
+    <div class="mb-4 d-flex justify-content-between align-items-center">
+        <h4>Key Statistics</h4>
+        <button class="btn btn-warning" id="catchupPlanBtn" type="button" data-bs-toggle="modal" data-bs-target="#catchupPlanModal">
+            Create Catch-Up/Get-Ahead Plan
+        </button>
+    </div>
+        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-3">
+            <div class="col">
+                <div class="card card-body h-100">
+                    <strong>Selected Period</strong><br>
+                    <span style="font-size:1.3em">{{ primary_avg|round(2) }}</span> hrs/workday
+                    {% if cmp_avg is not none %}
+                        <br>
+                        <span class="text-muted">Comparison: {{ cmp_avg|round(2) }} hrs</span>
+                        <br>
+                        <span class="fw-bold {% if stat_pct_cmp is not none and stat_pct_cmp > 0 %}text-success{% elif stat_pct_cmp is not none and stat_pct_cmp < 0 %}text-danger{% endif %}">
+                            {% if stat_pct_cmp is not none %}
+                                {% if stat_pct_cmp > 0 %}+{% endif %}{{ stat_pct_cmp|round(1) }}% vs. comparison
+                            {% endif %}
+                        </span>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="col">
+                <div class="card card-body h-100">
+                    <strong>Past 14 Days</strong><br>
+                    <span style="font-size:1.3em">{{ avg_14|round(2) }}</span> hrs/workday
+                    <br>
+                    <span class="fw-bold {% if stat_pct_14_30 is not none and stat_pct_14_30 > 0 %}text-success{% elif stat_pct_14_30 is not none and stat_pct_14_30 < 0 %}text-danger{% endif %}">
+                        {% if stat_pct_14_30 is not none %}
+                            {% if stat_pct_14_30 > 0 %}+{% endif %}{{ stat_pct_14_30|round(1) }}% vs. past 30 days
+                        {% endif %}
+                    </span>
+                    <br>
+                    <span class="fw-bold {% if stat_pct_14_ytd is not none and stat_pct_14_ytd > 0 %}text-success{% elif stat_pct_14_ytd is not none and stat_pct_14_ytd < 0 %}text-danger{% endif %}">
+                        {% if stat_pct_14_ytd is not none %}
+                            {% if stat_pct_14_ytd > 0 %}+{% endif %}{{ stat_pct_14_ytd|round(1) }}% vs. YTD
+                        {% endif %}
+                    </span>
+                </div>
+            </div>
+            <div class="col">
+                <div class="card card-body h-100">
+                    <strong>Past 30 Days</strong><br>
+                    <span style="font-size:1.3em">{{ avg_30|round(2) }}</span> hrs/workday
+                    <br>
+                    <span class="fw-bold {% if stat_pct_30_ytd is not none and stat_pct_30_ytd > 0 %}text-success{% elif stat_pct_30_ytd is not none and stat_pct_30_ytd < 0 %}text-danger{% endif %}">
+                        {% if stat_pct_30_ytd is not none %}
+                            {% if stat_pct_30_ytd > 0 %}+{% endif %}{{ stat_pct_30_ytd|round(1) }}% vs. YTD
+                        {% endif %}
+                    </span>
+                </div>
+            </div>
+            <div class="col">
+                <div class="card card-body h-100">
+                    <strong>Year to Date</strong><br>
+                    <span style="font-size:1.3em">{{ avg_ytd|round(2) }}</span> hrs/workday
+                </div>
+            </div>
         </div>
+    </div>
+
+    <div class="mb-4">
+        <h4>Goal Progress & Projections</h4>
+        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-3">
+            <div class="col">
+                <div class="card card-body h-100">
+                    <strong>Goal Completion</strong><br>
+                    <div class="progress mb-2" style="height: 1.5em;">
+                        <div class="progress-bar bg-success" role="progressbar" style="width: {{ pct_complete|round(1) }}%;" aria-valuenow="{{ pct_complete|round(1) }}" aria-valuemin="0" aria-valuemax="100">{{ pct_complete|round(1) }}%</div>
+                    </div>
+                    <span>{{ actual_ytd|round(1) }} / {{ annual_goal|round(1) }} hours</span>
+                </div>
+            </div>
+            <div class="col">
+                <div class="card card-body h-100">
+                    <strong>Projected Year-End Total</strong><br>
+                    <span style="font-size:1.3em">{{ projected_total|round(1) }}</span> hrs
+                    <br>
+                    <span class="text-muted">(if current pace continues)</span>
+                </div>
+            </div>
+            <div class="col">
+                <div class="card card-body h-100">
+                    <strong>Required Avg/Workday</strong><br>
+                    <span style="font-size:1.3em">{{ req_avg|round(2) }}</span> hrs/workday
+                    <br>
+                    <span class="text-muted">needed to reach goal</span>
+                </div>
+            </div>
+            <div class="col">
+                <div class="card card-body h-100">
+                    <strong>Days Ahead/Behind Target</strong><br>
+                    <span class="fw-bold {% if days_ahead_behind > 0 %}text-success{% elif days_ahead_behind < 0 %}text-danger{% endif %}">
+                        {% if days_ahead_behind > 0 %}+{% endif %}{{ days_ahead_behind|round(1) }} days
+                    </span>
+                    <br>
+                    <span class="text-muted">(positive = ahead)</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <form class="row g-3 align-items-end mb-4" method="get" id="dateRangeForm">
+        <div class="col-auto">
+            <label for="start_date" class="form-label mb-0">Start Date</label>
+            <input type="date" class="form-control" id="start_date" name="start_date" value="{{ request.args.get('start_date', '') }}">
+        </div>
+        <div class="col-auto">
+            <label for="end_date" class="form-label mb-0">End Date</label>
+            <input type="date" class="form-control" id="end_date" name="end_date" value="{{ request.args.get('end_date', '') }}">
+        </div>
+        <div class="col-auto">
+            <label for="compare_start" class="form-label mb-0">Compare Start</label>
+            <input type="date" class="form-control" id="compare_start" name="compare_start" value="{{ request.args.get('compare_start', '') }}">
+        </div>
+        <div class="col-auto">
+            <label for="compare_end" class="form-label mb-0">Compare End</label>
+            <input type="date" class="form-control" id="compare_end" name="compare_end" value="{{ request.args.get('compare_end', '') }}">
+        </div>
+        <div class="col-auto">
+            <button type="submit" class="btn btn-primary">Update</button>
+        </div>
+        <div class="col-auto">
+            <button type="button" class="btn btn-outline-secondary" onclick="clearDateRange()">Reset</button>
+        </div>
+    </form>
+    <script>
+        function clearDateRange() {
+            document.getElementById('start_date').value = '';
+            document.getElementById('end_date').value = '';
+            document.getElementById('compare_start').value = '';
+            document.getElementById('compare_end').value = '';
+            document.getElementById('dateRangeForm').submit();
+        }
+    </script>
+    <div class="mb-5">
+        <h4>Charts & Trends</h4>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <div class="row mb-4">
+            <div class="col-lg-6 mb-4">
+                <canvas id="monthCumulativeChart"></canvas>
+            </div>
+            <div class="col-lg-6 mb-4">
+                <canvas id="monthBarChart"></canvas>
+            </div>
+        </div>
+        <div class="row mb-4">
+            <div class="col-lg-6 mb-4">
+                <canvas id="weekdayPieChart"></canvas>
+            </div>
+            <div class="col-lg-6 mb-4">
+                <canvas id="rollingAvgChart"></canvas>
+            </div>
+        </div>
+        <script>
+            // Data from backend
+            const monthDays = {{ month_days|map(attribute='strftime', args=['%Y-%m-%d'])|list|tojson }};
+            const monthLogs = {{ month_logs|tojson }};
+            const monthTargets = {{ month_targets|tojson }};
+            const monthCumActual = {{ month_cum_actual|tojson }};
+            const monthCumTarget = {{ month_cum_target|tojson }};
+            const weekdayLabels = {{ weekday_labels|tojson }};
+            const weekdayData = {{ weekday_data|tojson }};
+            const rolling7d = {{ rolling_7d|tojson }};
+            const yearDays = {{ year_days|map(attribute='strftime', args=['%Y-%m-%d'])|list|tojson }};
+            const yearCumActual = {{ year_cum_actual|tojson }};
+            const yearCumTarget = {{ year_cum_target|tojson }};
+
+            // Comparison data from backend (may be empty)
+            const cmpMonthDays = {{ cmp_month_days|default([], true)|tojson }};
+            const cmpMonthCumActual = {{ cmp_month_cum_actual|default([], true)|tojson }};
+            const cmpMonthCumTarget = {{ cmp_month_cum_target|default([], true)|tojson }};
+            const cmpMonthLogs = {{ cmp_month_logs|default([], true)|tojson }};
+            const cmpMonthTargets = {{ cmp_month_targets|default([], true)|tojson }};
+
+            // Cumulative Line Chart (Primary & Comparison)
+            new Chart(document.getElementById('monthCumulativeChart'), {
+                type: 'line',
+                data: {
+                    labels: monthDays,
+                    datasets: [
+                        {label: 'Cumulative Actual', data: monthCumActual, borderColor: '#0d6efd', fill: false},
+                        {label: 'Cumulative Target', data: monthCumTarget, borderColor: '#adb5bd', borderDash: [6,3], fill: false},
+                        ...(cmpMonthCumActual.length ? [{label: 'Compare Actual', data: cmpMonthCumActual, borderColor: '#fd7e14', fill: false, borderDash: [2,2]}] : []),
+                        ...(cmpMonthCumTarget.length ? [{label: 'Compare Target', data: cmpMonthCumTarget, borderColor: '#6c757d', fill: false, borderDash: [2,2]}] : [])
+                    ]
+                },
+                options: {responsive: true, plugins:{title:{display:true, text:'Cumulative Progress (Selected Period)'}}}
+            });
+
+            // Bar Chart (Day Actual vs Target, Primary & Comparison)
+            new Chart(document.getElementById('monthBarChart'), {
+                type: 'bar',
+                data: {
+                    labels: monthDays,
+                    datasets: [
+                        {label: 'Actual', data: monthLogs, backgroundColor: '#0d6efd'},
+                        {label: 'Target', data: monthTargets, backgroundColor: '#adb5bd'},
+                        ...(cmpMonthLogs.length ? [{label: 'Compare Actual', data: cmpMonthLogs, backgroundColor: '#fd7e14'}] : []),
+                        ...(cmpMonthTargets.length ? [{label: 'Compare Target', data: cmpMonthTargets, backgroundColor: '#6c757d'}] : [])
+                    ]
+                },
+                options: {responsive:true, plugins:{title:{display:true, text:'Daily Hours (Selected Period)'}}}
+            });
+
+            // Pie Chart (Weekday Distribution)
+            new Chart(document.getElementById('weekdayPieChart'), {
+                type: 'pie',
+                data: {
+                    labels: weekdayLabels,
+                    datasets: [{data: weekdayData, backgroundColor:['#0d6efd','#6610f2','#6f42c1','#d63384','#fd7e14','#198754','#adb5bd']}]
+                },
+                options: {responsive:true, plugins:{title:{display:true, text:'Hours by Weekday'}}}
+            });
+
+            // Rolling 7-day Average (Year)
+            new Chart(document.getElementById('rollingAvgChart'), {
+                type: 'line',
+                data: {
+                    labels: yearDays.slice(yearDays.length - rolling7d.length),
+                    datasets: [
+                        {label: '7-Day Rolling Avg', data: rolling7d, borderColor: '#fd7e14', fill: false}
+                    ]
+                },
+                options: {responsive:true, plugins:{title:{display:true, text:'7-Day Rolling Average (Year)'}}}
+            });
+        </script>
     </div>
 
     <div class="mb-4">
