@@ -75,6 +75,73 @@ def generate_plan(goal, holidays, vacation_days, workload_weights):
         monthly_targets[m] = round(month_goal, 1)
     return plan, monthly_targets
 
+@planner_bp.route('/api/dashboard', methods=['GET'])
+@login_required
+def dashboard_api():
+    user = current_user
+    import dateutil.parser
+    try:
+        month = int(request.args.get('month', datetime.date.today().month))
+        year = int(request.args.get('year', datetime.date.today().year))
+    except Exception:
+        month = datetime.date.today().month
+        year = datetime.date.today().year
+
+    goal = BillableHourGoal.query.filter_by(user_id=user.id, year=year).first()
+    holidays = Holiday.query.filter_by(user_id=user.id).all()
+    vacation_days = VacationDay.query.filter_by(user_id=user.id).all()
+    if not goal:
+        return jsonify({"error": "Setup incomplete"}), 400
+    plan, monthly_targets = generate_plan(goal, holidays, vacation_days, goal.workload_weights)
+    today = datetime.date.today()
+    daily_plan = {d: h for d, h in plan.items() if d.month == month and d.year == year}
+    # Progress tracking
+    logs = DailyLog.query.filter(
+        DailyLog.user_id==user.id,
+        DailyLog.date>=datetime.date(year, 1, 1),
+        DailyLog.date<=datetime.date(year, 12, 31)
+    ).all()
+    logs_by_date = {log.date: log.hours for log in logs}
+    month_dates = [d for d in daily_plan.keys()]
+    month_actual = sum(logs_by_date.get(d, 0) for d in month_dates)
+    month_target = sum(daily_plan.values())
+    year_dates = list(plan.keys())
+    year_actual = sum(logs_by_date.get(d, 0) for d in year_dates)
+    year_target = sum(plan.values())
+    # Summary cards
+    year_progress = round((year_actual / year_target) * 100, 1) if year_target else 0
+    month_progress = round((month_actual / month_target) * 100, 1) if month_target else 0
+    # Recent activity (last 4 days)
+    recent_days = []
+    for i in range(3, -1, -1):
+        d = today - datetime.timedelta(days=i)
+        target = daily_plan.get(d, 0)
+        logged = logs_by_date.get(d, 0)
+        if d == today:
+            status = 'in-progress' if logged < target else 'success'
+            date_str = f"Today, {d.strftime('%b %d')}"
+        else:
+            status = 'success' if logged >= target else 'warning'
+            date_str = d.strftime('%A, %b %d')
+        recent_days.append({
+            'date': date_str,
+            'target': target,
+            'logged': logged,
+            'status': status
+        })
+    # Compose response
+    return jsonify({
+        'yearProgress': year_progress,
+        'monthProgress': month_progress,
+        'recentDays': recent_days,
+        'annualGoal': goal.annual_goal,
+        'monthActual': month_actual,
+        'monthTarget': month_target,
+        'yearActual': year_actual,
+        'yearTarget': year_target,
+        # Add more fields as needed for summary cards/charts
+    })
+
 @planner_bp.route('/', methods=['GET', 'POST'])
 @login_required
 def dashboard():

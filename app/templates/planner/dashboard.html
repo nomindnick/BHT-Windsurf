@@ -171,9 +171,10 @@
                 document.getElementById('log-date-label').innerText = date;
                 document.getElementById('log-date-input').value = date;
                 document.getElementById('log-hours-input').value = logged || target || '';
-                var modal = bootstrap.Modal.getInstance(document.getElementById('logModal'));
+                var modalElement = document.getElementById('logModal');
+                var modal = bootstrap.Modal.getInstance(modalElement);
                 if (!modal) {
-                  modal = new bootstrap.Modal(document.getElementById('logModal'));
+                  modal = new bootstrap.Modal(modalElement);
                 }
                 modal.show();
             }
@@ -224,8 +225,8 @@
 
     <div class="mb-4 d-flex justify-content-between align-items-center">
         <h4>Key Statistics</h4>
-        <button class="btn btn-warning" id="catchupPlanBtn" type="button" data-bs-toggle="modal" data-bs-target="#catchupPlanModal">
-            Create Catch-Up/Get-Ahead Plan
+        <button class="btn btn-warning" id="catchupPlanBtn" type="button" onclick="window.location.href='{{ url_for('planner.setup_wizard') }}'">
+            Update Your Plan
         </button>
     </div>
         <div class="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-3">

@@ -48,7 +48,7 @@ def login():
         
         login_user(user, remember=remember)
         next_page = request.args.get('next')
-        return redirect(next_page if next_page else url_for('home'))
+        return redirect(next_page if next_page else url_for('planner.dashboard'))
     
     return render_template('auth/login.html')
 
@@ -56,4 +56,4 @@ def login():
 @login_required
 def logout():
     logout_user()
-    return redirect(url_for('home'))
+    return redirect('/')
