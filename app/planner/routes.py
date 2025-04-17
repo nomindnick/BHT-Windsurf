@@ -300,6 +300,11 @@ def dashboard():
     # Comparison period
     cmp_avg = avg_billable({d: l for d, l in zip(cmp_month_days, cmp_month_logs)}, cmp_month_days) if cmp_month_days else None
 
+    # --- Stringify date lists for template ---
+    month_days_str = [d.strftime('%Y-%m-%d') for d in month_days]
+    year_days_str = [d.strftime('%Y-%m-%d') for d in year_days]
+    cmp_month_days_str = [d.strftime('%Y-%m-%d') for d in cmp_month_days] if cmp_month_days else []
+
     # Last 14 and 30 days
     last14 = [today_dt - datetime.timedelta(days=i) for i in range(14)][::-1]
     last30 = [today_dt - datetime.timedelta(days=i) for i in range(30)][::-1]
@@ -357,11 +362,13 @@ def dashboard():
         pace_status=pace_status,
         catchup_per_day=catchup_per_day,
         month_days=month_days,
+        month_days_str=month_days_str,
         month_logs=month_logs,
         month_targets=month_targets,
         month_cum_actual=month_cum_actual,
         month_cum_target=month_cum_target,
         year_days=year_days,
+        year_days_str=year_days_str,
         year_logs=year_logs,
         year_targets=year_targets,
         year_cum_actual=year_cum_actual,
@@ -372,6 +379,7 @@ def dashboard():
         streak=max_streak,
         rolling_7d=rolling_7d,
         cmp_month_days=cmp_month_days,
+        cmp_month_days_str=cmp_month_days_str,
         cmp_month_logs=cmp_month_logs,
         cmp_month_targets=cmp_month_targets,
         cmp_month_cum_actual=cmp_month_cum_actual,

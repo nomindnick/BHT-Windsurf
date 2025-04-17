@@ -379,7 +379,7 @@
         </div>
         <script>
             // Data from backend
-            const monthDays = {{ month_days|map(attribute='strftime', args=['%Y-%m-%d'])|list|tojson }};
+            const monthDays = {{ month_days_str|tojson }};
             const monthLogs = {{ month_logs|tojson }};
             const monthTargets = {{ month_targets|tojson }};
             const monthCumActual = {{ month_cum_actual|tojson }};
@@ -387,11 +387,11 @@
             const weekdayLabels = {{ weekday_labels|tojson }};
             const weekdayData = {{ weekday_data|tojson }};
             const rolling7d = {{ rolling_7d|tojson }};
-            const yearDays = {{ year_days|map(attribute='strftime', args=['%Y-%m-%d'])|list|tojson }};
+            const yearDays = {{ year_days_str|tojson }};
             const yearCumActual = {{ year_cum_actual|tojson }};
             const yearCumTarget = {{ year_cum_target|tojson }};
             // Comparison data from backend (may be empty)
-            const cmpMonthDays = {{ cmp_month_days|default([], true)|tojson }};
+            const cmpMonthDays = {{ cmp_month_days_str|tojson }};
             const cmpMonthCumActual = {{ cmp_month_cum_actual|default([], true)|tojson }};
             const cmpMonthCumTarget = {{ cmp_month_cum_target|default([], true)|tojson }};
             const cmpMonthLogs = {{ cmp_month_logs|default([], true)|tojson }};
