@@ -94,7 +94,7 @@
                                     {% if d is none %}
                                         <td></td>
                                     {% else %}
-                                        <td class="calendar-{{ d.status }}" {% if d.status != 'nonwork' %}data-date="{{ d.date }}" onclick="showLogModal({{ d.date|tojson }}, {{ d.target|tojson }}, {{ d.logged|tojson }})"{% endif %}>
+                                        <td class="calendar-{{ d.status }}" {% if d.status != 'nonwork' %}data-date="{{ d.date }}" onclick="showLogModal('{{ d.date }}', {{ d.target|tojson }}, {{ d.logged|tojson }})"{% endif %}>
                                             <div><strong>{{ d.date.day }}</strong></div>
                                             {% if d.target is not none %}
                                                 <div>Target: {{ d.target }}</div>
@@ -115,7 +115,7 @@
                                 {% if d is none %}
                                     <td></td>
                                 {% else %}
-                                    <td class="calendar-{{ d.status }}" {% if d.status != 'nonwork' %}data-date="{{ d.date }}" onclick="showLogModal({{ d.date|tojson }}, {{ d.target|tojson }}, {{ d.logged|tojson }})"{% endif %}>
+                                    <td class="calendar-{{ d.status }}" {% if d.status != 'nonwork' %}data-date="{{ d.date }}" onclick="showLogModal('{{ d.date }}', {{ d.target|tojson }}, {{ d.logged|tojson }})"{% endif %}>
                                         <div><strong>{{ d.date.day }}</strong></div>
                                         {% if d.target is not none %}
                                             <div>Target: {{ d.target }}</div>
@@ -171,7 +171,10 @@
                 document.getElementById('log-date-label').innerText = date;
                 document.getElementById('log-date-input').value = date;
                 document.getElementById('log-hours-input').value = logged || target || '';
-                var modal = new bootstrap.Modal(document.getElementById('logModal'));
+                var modal = bootstrap.Modal.getInstance(document.getElementById('logModal'));
+                if (!modal) {
+                  modal = new bootstrap.Modal(document.getElementById('logModal'));
+                }
                 modal.show();
             }
         </script>
@@ -288,7 +291,7 @@
                 <div class="card card-body h-100">
                     <strong>Goal Completion</strong><br>
                     <div class="progress mb-2" style="height: 1.5em;">
-                        <div class="progress-bar bg-success" role="progressbar" style="width: {{ pct_complete|round(1) }}%;" aria-valuenow="{{ pct_complete|round(1) }}" aria-valuemin="0" aria-valuemax="100">{{ pct_complete|round(1) }}%</div>
+                        <div class="progress-bar bg-success" role="progressbar" style="width: {{ pct_complete|round(1) }}%" aria-valuenow="{{ pct_complete|round(1) }}" aria-valuemin="0" aria-valuemax="100">{{ pct_complete|round(1) }}%</div>
                     </div>
                     <span>{{ actual_ytd|round(1) }} / {{ annual_goal|round(1) }} hours</span>
                 </div>
@@ -387,7 +390,6 @@
             const yearDays = {{ year_days|map(attribute='strftime', args=['%Y-%m-%d'])|list|tojson }};
             const yearCumActual = {{ year_cum_actual|tojson }};
             const yearCumTarget = {{ year_cum_target|tojson }};
-
             // Comparison data from backend (may be empty)
             const cmpMonthDays = {{ cmp_month_days|default([], true)|tojson }};
             const cmpMonthCumActual = {{ cmp_month_cum_actual|default([], true)|tojson }};
@@ -395,17 +397,22 @@
             const cmpMonthLogs = {{ cmp_month_logs|default([], true)|tojson }};
             const cmpMonthTargets = {{ cmp_month_targets|default([], true)|tojson }};
 
+
+
             // Cumulative Line Chart (Primary & Comparison)
             new Chart(document.getElementById('monthCumulativeChart'), {
                 type: 'line',
                 data: {
                     labels: monthDays,
-                    datasets: [
-                        {label: 'Cumulative Actual', data: monthCumActual, borderColor: '#0d6efd', fill: false},
-                        {label: 'Cumulative Target', data: monthCumTarget, borderColor: '#adb5bd', borderDash: [6,3], fill: false},
-                        ...(cmpMonthCumActual.length ? [{label: 'Compare Actual', data: cmpMonthCumActual, borderColor: '#fd7e14', fill: false, borderDash: [2,2]}] : []),
-                        ...(cmpMonthCumTarget.length ? [{label: 'Compare Target', data: cmpMonthCumTarget, borderColor: '#6c757d', fill: false, borderDash: [2,2]}] : [])
-                    ]
+                    datasets: (function() {
+                        let arr = [
+                          {label: 'Cumulative Actual', data: monthCumActual, borderColor: '#0d6efd', fill: false},
+                          {label: 'Cumulative Target', data: monthCumTarget, borderColor: '#adb5bd', borderDash: [6,3], fill: false}
+                        ];
+                        if (cmpMonthCumActual.length) arr.push({label: 'Compare Actual', data: cmpMonthCumActual, borderColor: '#fd7e14', fill: false, borderDash: [2,2]});
+                        if (cmpMonthCumTarget.length) arr.push({label: 'Compare Target', data: cmpMonthCumTarget, borderColor: '#6c757d', fill: false, borderDash: [2,2]});
+                        return arr;
+                    })()
                 },
                 options: {responsive: true, plugins:{title:{display:true, text:'Cumulative Progress (Selected Period)'}}}
             });
@@ -415,12 +422,15 @@
                 type: 'bar',
                 data: {
                     labels: monthDays,
-                    datasets: [
-                        {label: 'Actual', data: monthLogs, backgroundColor: '#0d6efd'},
-                        {label: 'Target', data: monthTargets, backgroundColor: '#adb5bd'},
-                        ...(cmpMonthLogs.length ? [{label: 'Compare Actual', data: cmpMonthLogs, backgroundColor: '#fd7e14'}] : []),
-                        ...(cmpMonthTargets.length ? [{label: 'Compare Target', data: cmpMonthTargets, backgroundColor: '#6c757d'}] : [])
-                    ]
+                    datasets: (function() {
+                        let arr = [
+                          {label: 'Actual', data: monthLogs, backgroundColor: '#0d6efd'},
+                          {label: 'Target', data: monthTargets, backgroundColor: '#adb5bd'}
+                        ];
+                        if (cmpMonthLogs.length) arr.push({label: 'Compare Actual', data: cmpMonthLogs, backgroundColor: '#fd7e14'});
+                        if (cmpMonthTargets.length) arr.push({label: 'Compare Target', data: cmpMonthTargets, backgroundColor: '#6c757d'});
+                        return arr;
+                    })()
                 },
                 options: {responsive:true, plugins:{title:{display:true, text:'Daily Hours (Selected Period)'}}}
             });
